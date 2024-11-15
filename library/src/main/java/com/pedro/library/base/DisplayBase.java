@@ -166,7 +166,8 @@ public abstract class DisplayBase {
         isPortrait = true;
       }
       glInterface.setEncoderSize(w, h);
-      if (glInterface instanceof GlStreamInterface glStreamInterface) {
+      if (glInterface instanceof GlStreamInterface) {
+        GlStreamInterface glStreamInterface = (GlStreamInterface) glInterface;
         glStreamInterface.setPreviewResolution(w, h);
         glStreamInterface.setIsPortrait(isPortrait);
       }
@@ -618,23 +619,25 @@ public abstract class DisplayBase {
   public void setVideoCodec(VideoCodec codec) {
     setVideoCodecImp(codec);
     recordController.setVideoCodec(codec);
-    String type = switch (codec) {
-      case H264 -> CodecUtil.H264_MIME;
-      case H265 -> CodecUtil.H265_MIME;
-      case AV1 -> CodecUtil.AV1_MIME;
-    };
-    videoEncoder.setType(type);
+    if (codec == VideoCodec.H264) {
+      videoEncoder.setType(CodecUtil.H264_MIME);
+    }else if (codec == VideoCodec.H265) {
+      videoEncoder.setType(CodecUtil.H265_MIME);
+    }else if (codec == VideoCodec.AV1) {
+      videoEncoder.setType(CodecUtil.AV1_MIME);
+    }
   }
 
   public void setAudioCodec(AudioCodec codec) {
     setAudioCodecImp(codec);
     recordController.setAudioCodec(codec);
-    String type = switch (codec) {
-      case G711 -> CodecUtil.G711_MIME;
-      case AAC -> CodecUtil.AAC_MIME;
-      case OPUS -> CodecUtil.OPUS_MIME;
-    };
-    audioEncoder.setType(type);
+    if (codec == AudioCodec.G711) {
+      audioEncoder.setType(CodecUtil.G711_MIME);
+    }else if (codec == AudioCodec.AAC) {
+      audioEncoder.setType(CodecUtil.AAC_MIME);
+    }else if (codec == AudioCodec.OPUS) {
+      audioEncoder.setType(CodecUtil.OPUS_MIME);
+    }
   }
 
   protected abstract void setVideoCodecImp(VideoCodec codec);

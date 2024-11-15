@@ -4,8 +4,8 @@ versionCode = "254"
 versionName = "2.5.4"
 
 #plugins versions
-agp = "8.6.1"
-kotlin = "2.0.21"
+agp = "7.3.1"
+kotlin = "1.8.0"
 dokka = "1.9.20"
 
 #dependencies versions
@@ -15,11 +15,11 @@ appcompat = "1.6.1"
 constraintlayout = "2.1.4"
 camerax = "1.4.0"
 multidex = "2.0.1"
-annotation = "1.9.1"
-coroutines = "1.9.0"
+annotation = "1.8.2"
+coroutines = "1.8.0"
 junit = "4.13.2"
 mockito = "5.4.0"
-ktor = "3.0.1"
+ktor = "2.3.12"
 uvcandroid = "1.0.7"
 media3 = "1.5.0-beta01"
 

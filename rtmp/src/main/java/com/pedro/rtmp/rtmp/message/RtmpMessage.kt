@@ -81,7 +81,7 @@ abstract class RtmpMessage(basicHeader: BasicHeader) {
     }
 
     fun getMarkType(type: Int): MessageType {
-      return MessageType.entries.find { it.mark.toInt() == type } ?: throw IOException("Unknown rtmp message type: $type")
+      return MessageType.values().find { it.mark.toInt() == type } ?: throw IOException("Unknown rtmp message type: $type")
     }
 
     private suspend fun getInputWithoutChunks(socket: RtmpSocket, header: RtmpHeader, chunkSize: Int,

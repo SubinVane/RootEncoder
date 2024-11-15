@@ -30,64 +30,64 @@ import androidx.annotation.RequiresApi;
  */
 public class CameraHelper {
 
-  private static final float[] verticesData = {
-      // X, Y, Z, U, V
-      -1f, -1f, 0f, 0f, 0f,
-      1f, -1f, 0f, 1f, 0f,
-      -1f, 1f, 0f, 0f, 1f,
-      1f, 1f, 0f, 1f, 1f,
-  };
+    private static final float[] verticesData = {
+            // X, Y, Z, U, V
+            -1f, -1f, 0f, 0f, 0f,
+            1f, -1f, 0f, 1f, 0f,
+            -1f, 1f, 0f, 0f, 1f,
+            1f, 1f, 0f, 1f, 1f,
+    };
 
-  public static float[] getVerticesData() {
-    return verticesData;
-  }
-
-  public static int getCameraOrientation(Context context) {
-    WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-    if (windowManager != null) {
-      int orientation = windowManager.getDefaultDisplay().getRotation();
-      return switch (orientation) {
-        case Surface.ROTATION_0 -> //portrait
-            90;
-        case Surface.ROTATION_90 -> //landscape
-            0;
-        case Surface.ROTATION_180 -> //reverse portrait
-            270;
-        case Surface.ROTATION_270 -> //reverse landscape
-            180;
-        default -> 0;
-      };
-    } else {
-      return 0;
+    public static float[] getVerticesData() {
+        return verticesData;
     }
-  }
 
-  public static boolean isPortrait(Context context) {
-    int orientation = getCameraOrientation(context);
-    return orientation == 90 || orientation == 270;
-  }
-
-  public static float getFingerSpacing(MotionEvent event) {
-    float x = event.getX(0) - event.getX(1);
-    float y = event.getY(0) - event.getY(1);
-    return (float) Math.sqrt(x * x + y * y);
-  }
-
-  /**
-   * Method to fix camera2 quality related with fps range.
-   * Add a device if needed.
-   */
-  @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-  public static boolean discardCamera2Fps(Range<Integer> range, Facing facing) {
-    //On Google pixel 4a, 30 and 15 fps ranges produce quality problems with camera2 using facing back.
-    //Build.MODEL.equalsIgnoreCase("Pixel 4") maybe necessary in future.
-    if (Build.MODEL.equalsIgnoreCase("Pixel 4a")) {
-      return facing == Facing.BACK && (range.getUpper() == 30 || range.getUpper() == 15);
+    public static int getCameraOrientation(Context context) {
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        if (windowManager != null) {
+            int orientation = windowManager.getDefaultDisplay().getRotation();
+            if (orientation == Surface.ROTATION_0) {
+                return 90;
+            } else if (orientation == Surface.ROTATION_90) {
+                return 0;
+            } else if (orientation == Surface.ROTATION_180) {
+                return 270;
+            } else if (orientation == Surface.ROTATION_270) {
+                return 180;
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
     }
-    return false;
-  }
 
-  public enum Facing {
-    BACK, FRONT
-  }
+    public static boolean isPortrait(Context context) {
+        int orientation = getCameraOrientation(context);
+        return orientation == 90 || orientation == 270;
+    }
+
+    public static float getFingerSpacing(MotionEvent event) {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float) Math.sqrt(x * x + y * y);
+    }
+
+    /**
+     * Method to fix camera2 quality related with fps range.
+     * Add a device if needed.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public static boolean discardCamera2Fps(Range<Integer> range, Facing facing) {
+        //On Google pixel 4a, 30 and 15 fps ranges produce quality problems with camera2 using facing back.
+        //Build.MODEL.equalsIgnoreCase("Pixel 4") maybe necessary in future.
+        if (Build.MODEL.equalsIgnoreCase("Pixel 4a")) {
+            return facing == Facing.BACK && (range.getUpper() == 30 || range.getUpper() == 15);
+        }
+        return false;
+    }
+
+    public enum Facing {
+        BACK, FRONT
+    }
 }

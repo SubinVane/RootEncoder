@@ -24,30 +24,41 @@ import android.media.MediaCodecInfo;
 
 public enum FormatVideoEncoder {
 
-  YUV420FLEXIBLE, YUV420PLANAR, YUV420SEMIPLANAR, YUV420PACKEDPLANAR, YUV420PACKEDSEMIPLANAR,
-  YUV422FLEXIBLE, YUV422PLANAR, YUV422SEMIPLANAR, YUV422PACKEDPLANAR, YUV422PACKEDSEMIPLANAR,
-  YUV444FLEXIBLE, YUV444INTERLEAVED, SURFACE,
-  //take first valid color for encoder (YUV420PLANAR, YUV420SEMIPLANAR or YUV420PACKEDPLANAR)
-  YUV420Dynamical;
+    YUV420FLEXIBLE, YUV420PLANAR, YUV420SEMIPLANAR, YUV420PACKEDPLANAR, YUV420PACKEDSEMIPLANAR,
+    YUV422FLEXIBLE, YUV422PLANAR, YUV422SEMIPLANAR, YUV422PACKEDPLANAR, YUV422PACKEDSEMIPLANAR,
+    YUV444FLEXIBLE, YUV444INTERLEAVED, SURFACE,
+    //take first valid color for encoder (YUV420PLANAR, YUV420SEMIPLANAR or YUV420PACKEDPLANAR)
+    YUV420Dynamical;
 
-  public int getFormatCodec() {
-    return switch (this) {
-      case YUV420FLEXIBLE -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
-      case YUV420PLANAR -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
-      case YUV420SEMIPLANAR -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
-      case YUV420PACKEDPLANAR -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar;
-      case YUV420PACKEDSEMIPLANAR ->
-          MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedSemiPlanar;
-      case YUV422FLEXIBLE -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422Flexible;
-      case YUV422PLANAR -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422Planar;
-      case YUV422SEMIPLANAR -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422SemiPlanar;
-      case YUV422PACKEDPLANAR -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422PackedPlanar;
-      case YUV422PACKEDSEMIPLANAR ->
-          MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422PackedSemiPlanar;
-      case YUV444FLEXIBLE -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Flexible;
-      case YUV444INTERLEAVED -> MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Interleaved;
-      case SURFACE -> MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-      default -> -1;
-    };
-  }
+    public int getFormatCodec() {
+        if (this == YUV420FLEXIBLE) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
+        } else if (this == YUV420PLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
+        } else if (this == YUV420SEMIPLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
+        } else if (this == YUV420PACKEDPLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar;
+        } else if (this == YUV420PACKEDSEMIPLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedSemiPlanar;
+        } else if (this == YUV422FLEXIBLE) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422Flexible;
+        } else if (this == YUV422PLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422Planar;
+        } else if (this == YUV422SEMIPLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422SemiPlanar;
+        } else if (this == YUV422PACKEDPLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422PackedPlanar;
+        } else if (this == YUV422PACKEDSEMIPLANAR) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV422PackedSemiPlanar;
+        } else if (this == YUV444FLEXIBLE) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Flexible;
+        } else if (this == YUV444INTERLEAVED) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Interleaved;
+        } else if (this == SURFACE) {
+            return MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+        } else {
+            return -1;
+        }
+    }
 }

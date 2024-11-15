@@ -5,12 +5,12 @@ plugins {
 
 android {
   namespace = "com.pedro.streamer"
-  compileSdk = 35
+  compileSdk = 34
 
   defaultConfig {
     applicationId = "com.pedro.streamer"
-    minSdk = 16
-    targetSdk = 35
+    minSdk = 23
+    targetSdk = 30
     versionCode = libs.versions.versionCode.get().toInt()
     versionName = libs.versions.versionName.get()
     multiDexEnabled = true
@@ -35,7 +35,7 @@ android {
 
 dependencies {
   implementation(project(":library"))
-  implementation(project(":extra-sources"))
+//  implementation(project(":extra-sources"))
   implementation(libs.androidx.constraintlayout)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.multidex)

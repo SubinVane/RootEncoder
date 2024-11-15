@@ -23,10 +23,8 @@ import android.media.MediaFormat
 import android.os.Build
 import android.util.Size
 import android.view.Surface
-import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.TextureView
-import android.view.TextureView.SurfaceTextureListener
 import androidx.annotation.RequiresApi
 import com.pedro.common.AudioCodec
 import com.pedro.common.VideoCodec
@@ -50,7 +48,6 @@ import com.pedro.library.util.FpsListener
 import com.pedro.library.util.streamclient.StreamBaseClient
 import com.pedro.library.view.GlStreamInterface
 import java.nio.ByteBuffer
-import kotlin.math.max
 
 
 /**
@@ -75,7 +72,6 @@ abstract class StreamBase(
   }
   //video and audio encoders
   private val videoEncoder by lazy { VideoEncoder(getVideoData) }
-  private val videoEncoderRecord by lazy { VideoEncoder(getVideoDataRecord) }
   private val audioEncoder by lazy { AudioEncoder(getAacData) }
   //video render
   private val glInterface = GlStreamInterface(context)
@@ -92,7 +88,6 @@ abstract class StreamBase(
     private set
   var audioSource: AudioSource = aSource
     private set
-  private var differentRecordResolution = false
 
   /**
    * Necessary only one time before start preview, stream or record.
@@ -102,44 +97,23 @@ abstract class StreamBase(
    * @param level codec value from MediaCodecInfo.CodecProfileLevel class
    *
    * @throws IllegalArgumentException if current video parameters are not supported by the VideoSource
-   * @throws IllegalArgumentException if you use differentRecordResolution but the aspect ratio is not the same than stream resolution
    * @return True if success, False if failed
    */
   @Throws(IllegalArgumentException::class)
   @JvmOverloads
-  fun prepareVideo(
-    width: Int, height: Int, bitrate: Int, fps: Int = 30, iFrameInterval: Int = 2,
-    rotation: Int = 0, profile: Int = -1, level: Int = -1,
-    recordWidth: Int = width, recordHeight: Int = height, recordBitrate: Int = bitrate
-  ): Boolean {
+  fun prepareVideo(width: Int, height: Int, bitrate: Int, fps: Int = 30, iFrameInterval: Int = 2,
+    rotation: Int = 0, profile: Int = -1, level: Int = -1): Boolean {
     if (isStreaming || isRecording || isOnPreview) {
       throw IllegalStateException("Stream, record and preview must be stopped before prepareVideo")
     }
-    differentRecordResolution = false
-    if (recordWidth != width && recordHeight != height) {
-      if (recordWidth.toDouble() / recordHeight.toDouble() != width.toDouble() / height.toDouble()) {
-        throw IllegalArgumentException("The aspect ratio of record and stream resolution must be the same")
-      }
-      differentRecordResolution = true
-    }
-    val videoResult = videoSource.init(max(width, recordWidth), max(height, recordHeight), fps, rotation)
+    val videoResult = videoSource.init(width, height, fps, rotation)
     if (videoResult) {
-      if (differentRecordResolution) {
-        //using different record resolution
-        if (rotation == 90 || rotation == 270) glInterface.setEncoderRecordSize(recordHeight, recordWidth)
-        else glInterface.setEncoderRecordSize(recordWidth, recordHeight)
-      }
       if (rotation == 90 || rotation == 270) glInterface.setEncoderSize(height, width)
       else glInterface.setEncoderSize(width, height)
       val isPortrait = rotation == 90 || rotation == 270
       glInterface.setIsPortrait(isPortrait)
       glInterface.setCameraOrientation(if (rotation == 0) 270 else rotation - 90)
       glInterface.forceOrientation(videoSource.getOrientationConfig())
-      if (differentRecordResolution) {
-        val result = videoEncoderRecord.prepareVideoEncoder(recordWidth, recordHeight, fps, recordBitrate, rotation,
-          iFrameInterval, FormatVideoEncoder.SURFACE, profile, level)
-        if (!result) return false
-      }
       return videoEncoder.prepareVideoEncoder(width, height, fps, bitrate, rotation,
         iFrameInterval, FormatVideoEncoder.SURFACE, profile, level)
     }
@@ -189,9 +163,6 @@ abstract class StreamBase(
     if (videoEncoder.isRunning) {
       videoEncoder.requestKeyframe()
     }
-    if (videoEncoderRecord.isRunning) {
-      videoEncoderRecord.requestKeyframe()
-    }
   }
 
   /**
@@ -212,7 +183,6 @@ abstract class StreamBase(
   fun forceFpsLimit(enabled: Boolean) {
     val fps = if (enabled) videoEncoder.fps else 0
     videoEncoder.setForceFps(fps)
-    videoEncoderRecord.setForceFps(fps)
     glInterface.forceFpsLimit(fps)
   }
 
@@ -222,7 +192,6 @@ abstract class StreamBase(
    */
   fun forceCodecType(codecTypeVideo: CodecUtil.CodecType, codecTypeAudio: CodecUtil.CodecType) {
     videoEncoder.forceCodecType(codecTypeVideo)
-    videoEncoderRecord.forceCodecType(codecTypeVideo)
     audioEncoder.forceCodecType(codecTypeAudio)
   }
 
@@ -253,10 +222,7 @@ abstract class StreamBase(
     if (isRecording) throw IllegalStateException("Record already started, stopRecord before startRecord again")
     recordController.startRecord(path, listener)
     if (!isStreaming) startSources()
-    else {
-      videoEncoder.requestKeyframe()
-      videoEncoderRecord.requestKeyframe()
-    }
+    else videoEncoder.requestKeyframe()
   }
 
   /**
@@ -292,55 +258,16 @@ abstract class StreamBase(
    * Start preview in the selected TextureView.
    * Must be called after prepareVideo.
    */
-  @JvmOverloads
-  fun startPreview(textureView: TextureView, autoHandle: Boolean = false) {
-    if (autoHandle) {
-      textureView.surfaceTextureListener = object: SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
-          if (!isOnPreview) startPreview(textureView)
-        }
-
-        override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
-          getGlInterface().setPreviewResolution(width, height)
-        }
-
-        override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
-          if (isOnPreview) stopPreview()
-          return true
-        }
-
-        override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {}
-      }
-      if (textureView.isAvailable && !isOnPreview) startPreview(textureView)
-    } else {
-      startPreview(Surface(textureView.surfaceTexture), textureView.width, textureView.height)
-    }
+  fun startPreview(textureView: TextureView) {
+    startPreview(Surface(textureView.surfaceTexture), textureView.width, textureView.height)
   }
 
   /**
    * Start preview in the selected SurfaceView.
    * Must be called after prepareVideo.
    */
-  @JvmOverloads
-  fun startPreview(surfaceView: SurfaceView, autoHandle: Boolean = false) {
-    if (autoHandle) {
-      surfaceView.holder.addCallback(object: SurfaceHolder.Callback {
-        override fun surfaceCreated(holder: SurfaceHolder) {
-          if (!isOnPreview) startPreview(surfaceView)
-        }
-
-        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-          getGlInterface().setPreviewResolution(width, height)
-        }
-
-        override fun surfaceDestroyed(holder: SurfaceHolder) {
-          if (isOnPreview) stopPreview()
-        }
-      })
-      if (surfaceView.holder.surface.isValid && !isOnPreview) startPreview(surfaceView)
-    } else {
-      startPreview(surfaceView.holder.surface, surfaceView.width, surfaceView.height)
-    }
+  fun startPreview(surfaceView: SurfaceView) {
+    startPreview(surfaceView.holder.surface, surfaceView.width, surfaceView.height)
   }
 
   /**
@@ -388,15 +315,7 @@ abstract class StreamBase(
   fun changeVideoSource(source: VideoSource) {
     val wasRunning = videoSource.isRunning()
     val wasCreated = videoSource.created
-    if (wasCreated) {
-      var width = videoEncoder.width
-      var height = videoEncoder.height
-      if (differentRecordResolution) {
-        width = max(width, videoEncoderRecord.width)
-        height = max(height, videoEncoderRecord.height)
-      }
-      source.init(width, height, videoEncoder.fps, videoEncoder.rotation)
-    }
+    if (wasCreated) source.init(videoEncoder.width, videoEncoder.height, videoEncoder.fps, videoEncoder.rotation)
     videoSource.stop()
     videoSource.release()
     if (wasRunning) source.start(glInterface.surfaceTexture)
@@ -427,7 +346,6 @@ abstract class StreamBase(
    */
   fun setTimestampMode(timestampModeVideo: TimestampMode, timestampModeAudio: TimestampMode) {
     videoEncoder.setTimestampMode(timestampModeVideo)
-    videoEncoderRecord.setTimestampMode(timestampModeVideo)
     audioEncoder.setTimestampMode(timestampModeAudio)
   }
 
@@ -437,7 +355,6 @@ abstract class StreamBase(
    */
   fun setEncoderErrorCallback(encoderErrorCallback: EncoderErrorCallback?) {
     videoEncoder.setEncoderErrorCallback(encoderErrorCallback)
-    videoEncoderRecord.setEncoderErrorCallback(encoderErrorCallback)
     audioEncoder.setEncoderErrorCallback(encoderErrorCallback)
   }
 
@@ -495,20 +412,16 @@ abstract class StreamBase(
     audioSource.start(getMicrophoneData)
     val startTs = System.nanoTime() / 1000
     videoEncoder.start(startTs)
-    if (differentRecordResolution) videoEncoderRecord.start(startTs)
     audioEncoder.start(startTs)
     glInterface.addMediaCodecSurface(videoEncoder.inputSurface)
-    if (differentRecordResolution) glInterface.addMediaCodecRecordSurface(videoEncoderRecord.inputSurface)
   }
 
   private fun stopSources() {
     if (!isOnPreview) videoSource.stop()
     audioSource.stop()
     glInterface.removeMediaCodecSurface()
-    glInterface.removeMediaCodecRecordSurface()
     if (!isOnPreview) glInterface.stop()
     videoEncoder.stop()
-    videoEncoderRecord.stop()
     audioEncoder.stop()
     if (!isRecording) recordController.resetFormats()
   }
@@ -532,12 +445,6 @@ abstract class StreamBase(
    * @return true if success, false if failed
    */
   fun resetVideoEncoder(): Boolean {
-    if (differentRecordResolution) {
-      glInterface.removeMediaCodecRecordSurface()
-      val result = videoEncoderRecord.reset()
-      if (!result) return false
-      glInterface.addMediaCodecRecordSurface(videoEncoderRecord.inputSurface)
-    }
     glInterface.removeMediaCodecSurface()
     val result = videoEncoder.reset()
     if (!result) return false
@@ -553,10 +460,6 @@ abstract class StreamBase(
   fun resetAudioEncoder(): Boolean = audioEncoder.reset()
 
   private fun prepareEncoders(): Boolean {
-    if (differentRecordResolution) {
-      val result = videoEncoderRecord.prepareVideoEncoder()
-      if (!result) return false
-    }
     return videoEncoder.prepareVideoEncoder() && audioEncoder.prepareAudioEncoder()
   }
 
@@ -579,19 +482,6 @@ abstract class StreamBase(
     override fun getVideoData(videoBuffer: ByteBuffer, info: MediaCodec.BufferInfo) {
       fpsListener.calculateFps()
       getVideoDataImp(videoBuffer, info)
-      if (!differentRecordResolution) recordController.recordVideo(videoBuffer, info)
-    }
-
-    override fun onVideoFormat(mediaFormat: MediaFormat) {
-      if (!differentRecordResolution) recordController.setVideoFormat(mediaFormat)
-    }
-  }
-
-  private val getVideoDataRecord: GetVideoData = object : GetVideoData {
-    override fun onVideoInfo(sps: ByteBuffer, pps: ByteBuffer?, vps: ByteBuffer?) {
-    }
-
-    override fun getVideoData(videoBuffer: ByteBuffer, info: MediaCodec.BufferInfo) {
       recordController.recordVideo(videoBuffer, info)
     }
 
@@ -622,7 +512,6 @@ abstract class StreamBase(
       VideoCodec.AV1 -> CodecUtil.AV1_MIME
     }
     videoEncoder.type = type
-    videoEncoderRecord.type = type
   }
 
   /**

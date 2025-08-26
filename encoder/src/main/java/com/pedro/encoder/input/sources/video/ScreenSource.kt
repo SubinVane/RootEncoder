@@ -57,7 +57,7 @@ class ScreenSource @JvmOverloads constructor(
   override fun start(surfaceTexture: SurfaceTexture) {
     this.surfaceTexture = surfaceTexture
     if (!isRunning()) {
-      val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR | DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE
+      val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR or DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE
       //Adapt MediaProjection render to stream resolution
       val shouldRotate = rotation == 90 || rotation == 270
       val displayWidth = if (shouldRotate) height else width
